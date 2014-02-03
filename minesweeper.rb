@@ -1,13 +1,44 @@
 class Game
-  def initialize(player)
-    @player = player
-    @grid = Grid.new(...)
+  def initialize(name)
+    @player = name
+    @grid = Grid.new(self)
   end
 
   def play
     until @grid.over?
-      player.play_turn
+      @grid.show
+      pos = play_turn
+      @grid[pos].reveal!
     end
+
+    if @grid.won?
+      @grid.all_reveal!
+      p "You found all the bombs"
+    else
+      @grid.blowup!
+      p "EVERYONE DIES!!!!"
+    end
+  end
+
+  def play_turn
+    decision = nil
+    while decision != "N"
+      p "Would you like to place a flag? (Y/N)"
+      decision = gets.chomp.upcase
+      if decision == "Y"
+        p "Choose the tile you would like to flag (y,x)"
+        pos = gets.chomp.split(',').map do |num|
+          num.to_i
+        end
+        @grid[pos].flag
+      end
+    end
+
+   p "Choose the tile you would like to reveal (y,x)"
+   pos = gets.chomp.split(',').map do |num|
+     num.to_i
+   end
+
   end
 end
 
@@ -15,48 +46,73 @@ class Grid
 
   attr_accessor :lost, :won
 
-  def initialize(game, size = "S", difficulty)
-    @game, @size, @difficulty = game, size, difficulty
+  def initialize(game, size = "S", difficulty = 1)
+    @game, @size, @difficulty = game, size.upcase, difficulty
+    @side_length = get_side_length(@size)
     @board = self.build_grid
   end
 
-  def build_grid
-    side_length = 0
+  def get_side_length(size)
     case @size
       when "S"
-        side_length = 8
+        8
       when "M"
-        side_length = 12
+        12
       when "L"
-        side_length = 16
+        16
     end
-    grid = []
-    side_length.times do |row|
-      side_length.times do |col|
-        # let's make sure this works
-        if rand(3) > difficulty
+  end
+
+  def build_grid
+    # difficulty = 1, 2, or 3
+    board = []
+    @side_length.times do |row|
+      @side_length.times do |col|
+        if rand(10) <= @difficulty
           bomb = true
         else
           bomb = false
         end
-        tile = Tile.new(self, [row, col],bomb)
+
+        tile = Tile.new(self, [row, col], bomb)
+        board << tile
       end
     end
+    board
+  end
+
+  def show
+    line_break = @side_length
+
+    @board.each_with_index do |tile, idx|
+      print "[" + tile.symbol.to_s + "]"
+      puts nil if (idx + 1) % line_break   == 0
+    end
+    nil
+  end
+
+  def blowup!
+  end
+
+  def all_reveal!
+  end
+
+  def [](pos)
+    @board.find { |tile| tile.pos == pos }
   end
 
   def over?
     lost || won?
   end
 
-  def blowup!
+  def lost_board
     self.lost = true
   end
 
   def won?
-
+    non_bomb_spaces = @board.select { |tile| !tile.bomb }
+    non_bomb_spaces.all? { |tile| tile.revealed? }
   end
-
-
 end
 
 class Tile
@@ -83,18 +139,26 @@ class Tile
 
   def flag
     @flagged = !@flagged
-    self.symbol = ( self.symbol == "F" ? " " : "F")
+    if self.symbol == " " || self.symbol == "F"
+      self.symbol = ( @flagged ? "F" : " ")
+    end
+  end
+
+  def revealed?
+    @revealed
   end
 
   def reveal!
-    break if @revealed
+    return if self.revealed?
     @revealed = true
     if self.bomb
       grid.blowup!
       self.symbol = "B"
+      p "there was a bomb here"
     else
       self.get_adjacent_tiles
     end
+
   end
 
   def get_adjacent_tiles
@@ -102,8 +166,10 @@ class Tile
     adjacent_tiles = []
     # collect adjacent tile positions
     ADJ_TILES.dup.each do |tile|
-      new_tile = grid[[self.pos[0] + tile[0]][self.pos[1] + tile[1]]
-      next if !grid[new_tile[0]][new_tile[1]]
+
+      new_tile = grid[[self.pos[0] + tile[0], self.pos[1] + tile[1]]]
+      # p new_tile
+      next unless new_tile
       adjacent_tiles << new_tile
       if new_tile.bomb
         num_bombs += 1
@@ -115,5 +181,6 @@ class Tile
         tile.reveal!
       end
     end
+    nil
   end
 end
