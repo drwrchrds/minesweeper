@@ -1,8 +1,8 @@
 class Grid
 
-  attr_accessor :lost, :won
+  attr_accessor :lost, :won, :game
 
-  def initialize(game, size = "S", difficulty = 1)
+  def initialize(game, size = "L", difficulty = 1)
     @game, @size, @difficulty = game, size.upcase, difficulty
     @side_length = get_side_length(@size)
     @board = self.build_grid
@@ -20,15 +20,10 @@ class Grid
   end
 
   def build_grid
-    # difficulty = 1, 2, or 3
     board = []
     @side_length.times do |row|
       @side_length.times do |col|
-        if rand(10) <= @difficulty
-          bomb = true
-        else
-          bomb = false
-        end
+        bomb = ( rand(10) <= @difficulty )
 
         tile = Tile.new(self, [row, col], bomb)
         board << tile
@@ -41,18 +36,20 @@ class Grid
     line_break = @side_length
 
     @board.each_with_index do |tile, idx|
-      if tile.bomb
-        if self.over?
-          symbol = "B".red.blink
-        else
-          symbol = " "
-        end
-      elsif tile.flagged
-        symbol = tile.symbol.to_s.white
+      if tile.flagged
+        symbol = "F".white
       else
-        symbol = tile.symbol.to_s.magenta
+        if tile.bomb
+          if self.over?
+            symbol = "B".red.blink
+          else
+            # p tile.flagged
+            symbol = " "
+          end
+        else
+          symbol = tile.symbol.to_s.magenta
+        end
       end
-
       print "[" + symbol + "]"
       puts nil if (idx + 1) % line_break == 0
       sleep(wait)

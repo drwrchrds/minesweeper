@@ -1,6 +1,6 @@
 class Tile
-  attr_reader :pos, :bomb, :flagged, :revealed, :grid
-  attr_accessor :symbol
+  attr_reader :pos, :bomb, :revealed, :grid
+  attr_accessor :symbol, :flagged
 
   ADJ_TILES = [
     [-1, -1],
@@ -20,13 +20,6 @@ class Tile
     @symbol = " " # starts out as space
   end
 
-  def flag
-    @flagged = !@flagged
-    if self.symbol == " " || self.symbol == "F"
-      self.symbol = ( @flagged ? "F" : " ")
-    end
-  end
-
   def revealed?
     @revealed
   end
@@ -35,13 +28,10 @@ class Tile
     return if self.revealed?
     @revealed = true
     if self.bomb
-      self.symbol = "B".colorize(:red)
-      #p "there was a bomb here"
       grid.lost_board
     else
       self.get_adjacent_tiles
     end
-
   end
 
   def get_adjacent_tiles
