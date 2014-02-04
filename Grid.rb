@@ -2,7 +2,7 @@ class Grid
 
   attr_accessor :lost, :won, :game
 
-  def initialize(game, size = "L", difficulty = 1)
+  def initialize(game, size = "S", difficulty = 4)
     @game, @size, @difficulty = game, size.upcase, difficulty
     @side_length = get_side_length(@size)
     @board = self.build_grid
@@ -32,7 +32,7 @@ class Grid
     board
   end
 
-  def show(wait = 0, win = false)
+  def show(wait = 0)
     line_break = @side_length
 
     @board.each_with_index do |tile, idx|

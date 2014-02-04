@@ -1,15 +1,16 @@
 require 'colorize'
 require 'yaml'
+require 'json'
 require_relative 'Tiles'
 require_relative 'Grid'
-require_relative 'save_game.rb'
 
 class Game
 
-  attr_reader :grid
+  attr_reader :grid, :lapsed_time
 
   def initialize(load = false)
     @load = load
+    @leader_board = load_leader_board if Dir.entries(".").include?("leader_board.txt")
     if load
       @grid = load_game_file
       @grid.game = self
@@ -20,6 +21,7 @@ class Game
   end
 
   def play
+    start_time = Time.now
     until @grid.over?
       @grid.show
       pos = play_turn
@@ -28,8 +30,11 @@ class Game
     end
 
     if @grid.won?
+      end_time = Time.now
+      @lapsed_time = start_time - end_time
       @grid.all_reveal!
-      p "You found all the bombs"
+      p "You found all the bombs - you took #{lapsed_time}"
+      check_leader_board
     else
       @grid.blowup!
       p "EVERYONE DIES!!!!"
@@ -44,7 +49,7 @@ class Game
       p "What would you like to call this game?"
       game_name = gets.chomp
 
-      save_game_file(game_name)
+      yaml_save(game_name)
     end
   end
 
@@ -69,20 +74,58 @@ class Game
    end
 
   end
-  def save_game_file(file_name)
-    game_state = @grid.to_yaml
-    File.open("#{Time.now}_#{file_name}_saved_game.txt", "w") do |line|
-      line.puts game_state
+  def check_leader_board
+    replace = 0
+    init = nil
+
+    @leader_board.each_with_index do |leader, idx|
+      if leader[0] > @lapsed_time
+        p "You have earned the #{idx+1} spot on the leader board"
+        p "please enter your initals!"
+        init = gets.chomp
+        replace = idx
+        break
+      end
     end
-    p "Game saved"
+
+    if replace
+      @leader_board.insert(replace, [@lapsed_time, init, Time.date, @grid.difficulty])
+      save_leader_board
+    end
   end
 
-  def load_game_file
+  def save_leader_board
+    File.open("leader_board.txt", "w") do |line|
+      @leader_board.take(10).each do |leader|
+        p leader
+        line.puts leader.to_json
+      end
+    end
+  end
+
+  def load_leader_board
+    leader_board = []
+     File.open("leader_board.txt").each  do |line|
+      leader_board << JSON.parse(line)
+    end
+    leader_board
+  end
+
+  def yaml_save(file_name)
+    game_state = @grid.to_yaml
+    File.open("#{file_name}_save.txt", "w") do |line|
+      line.puts game_state
+    end
+    p "Game saved!"
+  end
+
+  def yaml_load
     p "what is the name of the game file"
     file_name = gets.chomp
-    yaml_object = File.open(file_name)
-    game = YAML::load(yaml_object)
+    YAML::load(File.open(file_name))
   end
+
+
 end
 
 
