@@ -11,7 +11,7 @@ class Game
   def initialize(load = false)
     @load = load
     if load
-      @grid = load_game_file.grid
+      @grid = load_game_file
       @grid.game = self
     else
       @grid = Grid.new(self)
@@ -30,7 +30,6 @@ class Game
     if @grid.won?
       @grid.all_reveal!
       p "You found all the bombs"
-
     else
       @grid.blowup!
       p "EVERYONE DIES!!!!"
